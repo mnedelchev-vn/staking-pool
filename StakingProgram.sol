@@ -243,7 +243,7 @@ contract StakingProgram is Ownable, SafeMath {
 	
 	function _addPayout(uint256 _fee) private {
 		uint256 dividendPerToken = div(mul(_fee, scaling), totalStakes);
-		totalDividends = add(totalDividends, dividendPerToken);
+		totalDividends = add(totalDividends, dividendPerToken); 
 		payouts[round] = add(payouts[round-1], dividendPerToken);
 		
 		// adding this user fee to the totalFees
