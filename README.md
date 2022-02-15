@@ -16,7 +16,7 @@ The Staking Program smart contract is a place where multiple holders of particul
 * Method `setAcceleratorAddress` - by default variable `acceleratorAddress` is set to 0x0 and this logic is not working by the time of deploying contract. This logic is created if in the future the owner of the Staking Program manages to find a way to successfully iterate with another contract in order to better addoption the Staking Program smart contract.
 
 #### Required parameters before deploying the contract:
-* `_erc20token_address` - .
+* `_erc20token_address` - This is the token contract to which the Staking Program will apply. Holders of this token will have the opportunity to take part in the staking.
 * `_stakingFee` - this is the fee in percentages that the user will be charged with whenever he is staking particular amount of tokens.
 * `_unstakingFee` - this is the fee in percentages that the user will be charged with whenever he is unstaking particular amount of tokens.
 
