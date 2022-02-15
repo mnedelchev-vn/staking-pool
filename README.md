@@ -6,11 +6,11 @@ The Staking Program smart contract is a place where multiple holders of particul
 ## Public methods
 * Method `stake` - this method accepts one parameter `_tokens_amount` which is basically the amount of tokens that the `msg.sender` is willing to stake.
 * Method `unstake` - this method accepts one parameter `_tokens_amount` which is basically the amount of tokens that the `msg.sender` is willing to unstake.
-* Method `claimReward` - this method transfers all the current existing staking rewards to the `msg.sender` address. 
+* Method `claimReward` - this method transfers all the current existing staking rewards to the `msg.sender` address.
 * Method `getPendingReward` - getter method which accepts one parameter `_staker` and is returning all the current existing staking rewards for `_staker` address.
 * Method `addRewards` - This method accepts on parameter `_tokens_amount` and is designed if someone wants to make a donation to the stakeholders. The `_tokens_amount` amount go directly to the smart contrac total stake and are scattered among the stakers based on their stake.
 
-## Contract owner methods
+## Contract Owner methods
 * Method `stopUnstopStaking` - this method is built to "retire" the staking smart contract whenever it's not needed anymore. However this method shuts down only future staking actions. Once stopped from staking, the existing stakers in the Staking Program will still be able to withdraw their stakes and the current rewards ( if they have any at the time of unstaking ).
 * Method `setFees` - this method is existing so the owner have the permission to update the contract fees, but there is a condition which is protecting token owners that the fees can never be higher than 10 percentages.
 * Method `setAcceleratorAddress` - by default variable `acceleratorAddress` is set to 0x0 and this logic is not working by the time of deploying contract. This logic is created if in the future the owner of the Staking Program manages to find a way to successfully iterate with another contract in order to better addoption the Staking Program smart contract.
