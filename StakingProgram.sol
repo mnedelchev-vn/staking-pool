@@ -1,12 +1,10 @@
-// Dentacoin Foundation
-
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.0;
+pragma solidity 0.6.0;
 
 contract Ownable {
     address public owner;
 
-    constructor() {
+    constructor() public {
         owner = msg.sender;
     }
 
@@ -86,14 +84,13 @@ contract SafeMath {
 }
 
 contract StakingProgram is Ownable, SafeMath {
-    ERC20token erc20tokenInstance;
+    ERC20token public erc20tokenInstance;
     uint256 public stakingFee; // percentage
     uint256 public unstakingFee; // percentage
     uint256 public round = 1;
     uint256 public totalStakes = 0;
-    uint256 public totalFees = 0; // TEMP VARIABLE, TO BE REMOVED
     uint256 public totalDividends = 0;
-    uint256 public scaling = 10 ** 10;
+    uint256 private scaling = 10 ** 10;
     bool public stakingStopped = false;
     address public acceleratorAddress = address(0);
 
@@ -106,7 +103,7 @@ contract StakingProgram is Ownable, SafeMath {
     mapping(address => Staker) public stakers;
     mapping(uint256 => uint256) public payouts;
 
-    constructor(address _erc20token_address, uint256 _stakingFee, uint256 _unstakingFee) {
+    constructor(address _erc20token_address, uint256 _stakingFee, uint256 _unstakingFee) public {
         erc20tokenInstance = ERC20token(_erc20token_address);
         stakingFee = _stakingFee;
         unstakingFee = _unstakingFee;
@@ -141,6 +138,8 @@ contract StakingProgram is Ownable, SafeMath {
     }
 
     function setFees(uint256 _stakingFee, uint256 _unstakingFee) external onlyOwner {
+        require(_stakingFee <= 10 && _unstakingFee <= 10, "Invalid fees.");
+
         stakingFee = _stakingFee;
         unstakingFee = _unstakingFee;
     }
@@ -247,9 +246,6 @@ contract StakingProgram is Ownable, SafeMath {
         uint256 dividendPerToken = div(mul(_fee, scaling), totalStakes);
         totalDividends = add(totalDividends, dividendPerToken);
         payouts[round] = add(payouts[round-1], dividendPerToken);
-
-        // adding this user fee to the totalFees
-        totalFees = add(totalFees, _fee);
         round+=1;
 
         emit payout(round, _fee, msg.sender);
@@ -258,10 +254,6 @@ contract StakingProgram is Ownable, SafeMath {
     function getPendingReward(address _staker) public view returns(uint256) {
         uint256 amount = mul((sub(totalDividends, payouts[stakers[_staker].round - 1])), stakers[_staker].stakedTokens);
         return add(div(amount, scaling), stakers[_staker].remainder);
-    }
-
-    function getUserStake(address _address) public view returns(uint256) {
-        return stakers[_address].stakedTokens;
     }
     // ==================================== CONTRACT BODY ====================================
 }
