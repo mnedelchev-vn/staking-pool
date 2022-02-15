@@ -6,7 +6,7 @@ The Staking Program smart contract is a place where multiple holders of particul
 ## Public methods
 * Method `stake` - this method accepts one parameter `_tokens_amount` which is basically the amount of tokens that the `msg.sender` is willing to stake.
 * Method `unstake` - this method accepts one parameter `_tokens_amount` which is basically the amount of tokens that the `msg.sender` is willing to unstake.
-* Method `claimReward` - this method transfers all the current existing staking rewards to the `msg.sender` address.
+* Method `claimReward` - this method transfers all the current existing staking rewards to the `msg.sender` address. 
 * Method `getPendingReward` - getter method which accepts one parameter `_staker` and is returning all the current existing staking rewards for `_staker` address.
 * Method `addRewards` - This method accepts on parameter `_tokens_amount` and is designed if someone wants to make a donation to the stakeholders. The `_tokens_amount` amount go directly to the smart contrac total stake and are scattered among the stakers based on their stake.
 

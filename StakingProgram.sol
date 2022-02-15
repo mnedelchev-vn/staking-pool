@@ -255,7 +255,7 @@ contract StakingProgram is Ownable, SafeMath {
         uint256 amount = mul((sub(totalDividends, payouts[stakers[_staker].round - 1])), stakers[_staker].stakedTokens);
         return add(div(amount, scaling), stakers[_staker].remainder);
     }
-    // ==================================== CONTRACT BODY ====================================
+    // ===================================== CONTRACT BODY ====================================
 }
 
 interface ERC20token {
