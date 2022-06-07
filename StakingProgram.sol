@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at optimistic.etherscan.io on 2022-03-31
+*/
+
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.0;
 
@@ -10,11 +14,6 @@ contract Ownable {
 
     modifier onlyOwner() {
         if (msg.sender == owner)
-            _;
-    }
-
-    modifier everyoneElseBesideOwner() {
-        if (msg.sender != owner)
             _;
     }
 
@@ -74,7 +73,6 @@ contract SafeMath {
     }
 
     /**
-    * @dev Divides two numbers and returns the remainder (unsigned integer modulo),
     * reverts when dividing by zero.
     */
     function mod(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -90,17 +88,17 @@ contract StakingProgram is Ownable, SafeMath {
     uint256 public round = 1;
     uint256 public totalStakes = 0;
     uint256 public totalDividends = 0;
-    uint256 private scaling = 10 ** 10;
+    uint256 public scaledRemainder = 0;
+    uint256 constant private scaling = 10 ** 18;
     bool public stakingStopped = false;
-    address public acceleratorAddress = address(0);
 
     struct Staker {
         uint256 stakedTokens;
         uint256 round;
-        uint256 remainder;
     }
 
     mapping(address => Staker) public stakers;
+    mapping(address => bool) public whitelistedStakers;
     mapping(uint256 => uint256) public payouts;
 
     constructor(address _erc20token_address, uint256 _stakingFee, uint256 _unstakingFee) public {
@@ -110,20 +108,20 @@ contract StakingProgram is Ownable, SafeMath {
     }
 
     // ==================================== EVENTS ====================================
-    event staked(address staker, uint256 tokens, uint256 fee);
-    event unstaked(address staker, uint256 tokens, uint256 fee);
-    event payout(uint256 round, uint256 tokens, address sender);
-    event claimedReward(address staker, uint256 reward);
+    event staked(address indexed staker, uint256 tokens, uint256 fee);
+    event unstaked(address indexed staker, uint256 tokens, uint256 fee);
+    event payout(uint256 round, uint256 tokens, address indexed sender);
+    event claimedReward(address indexed staker, uint256 reward);
     // ==================================== /EVENTS ====================================
 
     // ==================================== MODIFIERS ====================================
-    modifier onlyAccelerator() {
-        require(msg.sender == address(acceleratorAddress));
+    modifier onlyWhitelistedStakers() {
+        require(whitelistedStakers[msg.sender] == true);
         _;
     }
 
     modifier checkIfStakingStopped() {
-        require(!stakingStopped, "Staking is stopped.");
+        require(!stakingStopped, "ERROR: staking is stopped.");
         _;
     }
     // ==================================== /MODIFIERS ====================================
@@ -144,63 +142,70 @@ contract StakingProgram is Ownable, SafeMath {
         unstakingFee = _unstakingFee;
     }
 
-    function setAcceleratorAddress(address _address) external onlyOwner {
-        acceleratorAddress = address(_address);
+    function setWhitelistedStaker(address _address, bool _bool) external onlyOwner {
+        whitelistedStakers[_address] = _bool;
     }
     // ==================================== /CONTRACT ADMIN ====================================
 
     // ==================================== CONTRACT BODY ====================================
     function stake(uint256 _tokens_amount) external checkIfStakingStopped {
-        require(_tokens_amount > 0, "Invalid token amount.");
-        require(erc20tokenInstance.transferFrom(msg.sender, address(this), _tokens_amount), "Tokens cannot be transferred from sender.");
+        require(_tokens_amount > 0, "ERROR: invalid token amount.");
+        require(erc20tokenInstance.transferFrom(msg.sender, address(this), _tokens_amount), "ERROR: tokens cannot be transferred from the sender.");
 
         uint256 _fee = 0;
-        if (totalStakes  > 0) {
-            // calculating this user staking fee based on the tokens amount that user want to stake
+        if (totalStakes > 0) {
             _fee = div(mul(_tokens_amount, stakingFee), 100);
-            _addPayout(_fee);
         }
 
-        // if staking not for first time this means that there are already existing rewards
-        uint256 existingRewards = getPendingReward(msg.sender);
-        if (existingRewards > 0) {
-            stakers[msg.sender].remainder = add(stakers[msg.sender].remainder, existingRewards);
-        }
-
+        uint256 pendingReward = getPendingReward(msg.sender);
+        stakers[msg.sender].round = round;
         // saving user staked tokens minus the staking fee
         stakers[msg.sender].stakedTokens = add(sub(_tokens_amount, _fee), stakers[msg.sender].stakedTokens);
-        stakers[msg.sender].round = round;
 
         // adding this user stake to the totalStakes
         totalStakes = add(totalStakes, sub(_tokens_amount, _fee));
+
+        // if fee then spread it in the staking pool
+        if (_fee > 0) {
+            _addPayout(_fee);
+        }
+
+        // if existing rewards then send them to the staker
+        if (pendingReward > 0) {
+            require(erc20tokenInstance.transfer(msg.sender, pendingReward), "ERROR: error in sending reward from contract to sender.");
+            emit claimedReward(msg.sender, pendingReward);
+        }
 
         emit staked(msg.sender, sub(_tokens_amount, _fee), _fee);
     }
 
-    function acceleratorStake(uint256 _tokens_amount, address _staker) external checkIfStakingStopped onlyAccelerator {
-        require(acceleratorAddress != address(0), "Invalid address.");
-        require(_tokens_amount > 0, "Invalid token amount.");
-        require(erc20tokenInstance.transferFrom(msg.sender, address(this), _tokens_amount), "Tokens cannot be transferred from sender.");
+    function whitelistedStake(uint256 _tokens_amount, address _staker) external checkIfStakingStopped onlyWhitelistedStakers {
+        require(_tokens_amount > 0, "ERROR: invalid token amount.");
+        require(erc20tokenInstance.transferFrom(msg.sender, address(this), _tokens_amount), "ERROR: tokens cannot be transferred from sender.");
 
         uint256 _fee = 0;
-        if (totalStakes  > 0) {
-            // calculating this user staking fee based on the tokens amount that user want to stake
+        if (totalStakes > 0) {
             _fee = div(mul(_tokens_amount, stakingFee), 100);
-            _addPayout(_fee);
         }
 
-        // if staking not for first time this means that there are already existing rewards
-        uint256 existingRewards = getPendingReward(_staker);
-        if (existingRewards > 0) {
-            stakers[_staker].remainder = add(stakers[_staker].remainder, existingRewards);
-        }
-
+        uint256 pendingReward = getPendingReward(_staker);
+        stakers[_staker].round = round;
         // saving user staked tokens minus the staking fee
         stakers[_staker].stakedTokens = add(sub(_tokens_amount, _fee), stakers[_staker].stakedTokens);
-        stakers[_staker].round = round;
 
         // adding this user stake to the totalStakes
         totalStakes = add(totalStakes, sub(_tokens_amount, _fee));
+
+        // if fee then spread it in the staking pool
+        if (_fee > 0) {
+            _addPayout(_fee);
+        }
+
+        // if existing rewards then send them to the staker
+        if (pendingReward > 0) {
+            require(erc20tokenInstance.transfer(_staker, pendingReward), "ERROR: error in sending reward from contract to sender.");
+            emit claimedReward(_staker, pendingReward);
+        }
 
         emit staked(_staker, sub(_tokens_amount, _fee), _fee);
     }
@@ -208,42 +213,54 @@ contract StakingProgram is Ownable, SafeMath {
     function claimReward() external {
         uint256 pendingReward = getPendingReward(msg.sender);
         if (pendingReward > 0) {
-            stakers[msg.sender].remainder = 0;
             stakers[msg.sender].round = round; // update the round
-
             require(erc20tokenInstance.transfer(msg.sender, pendingReward), "ERROR: error in sending reward from contract to sender.");
-
             emit claimedReward(msg.sender, pendingReward);
         }
     }
 
     function unstake(uint256 _tokens_amount) external {
-        require(_tokens_amount > 0 && stakers[msg.sender].stakedTokens >= _tokens_amount, "Invalid token amount to unstake.");
+        require(_tokens_amount > 0 && stakers[msg.sender].stakedTokens >= _tokens_amount, "ERROR: invalid token amount to unstake.");
 
-        stakers[msg.sender].stakedTokens = sub(stakers[msg.sender].stakedTokens, _tokens_amount);
+        uint256 pendingReward = getPendingReward(msg.sender);
         stakers[msg.sender].round = round;
+        stakers[msg.sender].stakedTokens = sub(stakers[msg.sender].stakedTokens, _tokens_amount);
 
         // calculating this user unstaking fee based on the tokens amount that user want to unstake
-        uint256 _fee = div(mul(_tokens_amount, unstakingFee), 100);
-
-        // sending to user desired token amount minus his unstacking fee
-        require(erc20tokenInstance.transfer(msg.sender, sub(_tokens_amount, _fee)), "Error in unstaking tokens.");
-
         totalStakes = sub(totalStakes, _tokens_amount);
+
+        // if totalStakes then spread the fee in the staking pool
+        uint256 _fee = 0;
         if (totalStakes > 0) {
+            _fee = div(mul(_tokens_amount, unstakingFee), 100);
             _addPayout(_fee);
         }
+
+        // if existing rewards then add them to the unstaking amount
+        uint256 _unstaking_amount = sub(_tokens_amount, _fee);
+        if (pendingReward > 0) {
+            _unstaking_amount = add(_unstaking_amount, pendingReward);
+            emit claimedReward(msg.sender, pendingReward);
+        }
+
+        // sending to user desired token amount minus his unstacking fee
+        require(erc20tokenInstance.transfer(msg.sender, _unstaking_amount), "ERROR: error in unstaking tokens.");
 
         emit unstaked(msg.sender, sub(_tokens_amount, _fee), _fee);
     }
 
     function addRewards(uint256 _tokens_amount) external checkIfStakingStopped {
-        require(erc20tokenInstance.transferFrom(msg.sender, address(this), _tokens_amount), "Tokens cannot be transferred from sender.");
-        _addPayout(_tokens_amount);
+        if (totalStakes > 0) {
+            require(erc20tokenInstance.transferFrom(msg.sender, address(this), _tokens_amount), "ERROR: tokens cannot be transferred from sender.");
+            _addPayout(_tokens_amount);
+        }
     }
 
     function _addPayout(uint256 _fee) private {
-        uint256 dividendPerToken = div(mul(_fee, scaling), totalStakes);
+        uint256 available = add(mul(_fee, scaling), scaledRemainder);
+        uint256 dividendPerToken = div(available, totalStakes);
+        scaledRemainder = mod(available, totalStakes);
+
         totalDividends = add(totalDividends, dividendPerToken);
         payouts[round] = add(payouts[round-1], dividendPerToken);
         round+=1;
@@ -252,8 +269,7 @@ contract StakingProgram is Ownable, SafeMath {
     }
 
     function getPendingReward(address _staker) public view returns(uint256) {
-        uint256 amount = mul((sub(totalDividends, payouts[stakers[_staker].round - 1])), stakers[_staker].stakedTokens);
-        return add(div(amount, scaling), stakers[_staker].remainder);
+        return div(mul((sub(totalDividends, payouts[stakers[_staker].round - 1])), stakers[_staker].stakedTokens), scaling);
     }
     // ===================================== CONTRACT BODY =====================================
 }
