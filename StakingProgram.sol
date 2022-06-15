@@ -83,14 +83,14 @@ contract SafeMath {
 
 contract StakingProgram is Ownable, SafeMath {
     ERC20token public erc20tokenInstance;
-    uint256 public stakingFee; // percentage
-    uint256 public unstakingFee; // percentage
+    uint8 public stakingFee; // percentage
+    uint8 public unstakingFee; // percentage
+    bool public stakingStopped = false;
+    uint64 constant private scaling = 10 ** 18;
     uint256 public round = 1;
     uint256 public totalStakes = 0;
     uint256 public totalDividends = 0;
     uint256 public scaledRemainder = 0;
-    uint256 constant private scaling = 10 ** 18;
-    bool public stakingStopped = false;
 
     struct Staker {
         uint256 stakedTokens;
@@ -101,7 +101,7 @@ contract StakingProgram is Ownable, SafeMath {
     mapping(address => bool) public whitelistedStakers;
     mapping(uint256 => uint256) public payouts;
 
-    constructor(address _erc20token_address, uint256 _stakingFee, uint256 _unstakingFee) public {
+    constructor(address _erc20token_address, uint8 _stakingFee, uint8 _unstakingFee) public {
         erc20tokenInstance = ERC20token(_erc20token_address);
         stakingFee = _stakingFee;
         unstakingFee = _unstakingFee;
@@ -135,7 +135,7 @@ contract StakingProgram is Ownable, SafeMath {
         }
     }
 
-    function setFees(uint256 _stakingFee, uint256 _unstakingFee) external onlyOwner {
+    function setFees(uint8 _stakingFee, uint8 _unstakingFee) external onlyOwner {
         require(_stakingFee <= 10 && _unstakingFee <= 10, "Invalid fees.");
 
         stakingFee = _stakingFee;
