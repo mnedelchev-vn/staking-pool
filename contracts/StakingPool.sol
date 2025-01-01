@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
@@ -31,7 +31,7 @@ contract StakingPool is Ownable, Pausable {
     error InvalidInject();
     error InvalidRewardClaim();
 
-    constructor(address _token, uint8 _stakingFee, uint8 _unstakingFee) {
+    constructor(address _token, uint8 _stakingFee, uint8 _unstakingFee) Ownable(msg.sender) {
         token = IERC20(_token);
         stakingFee = _stakingFee;
         unstakingFee = _unstakingFee;

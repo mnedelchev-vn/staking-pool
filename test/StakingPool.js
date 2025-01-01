@@ -1,60 +1,69 @@
-const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 
 describe('Strategy test init.', async function () {
-    let TokenContract;
+    let TestERC20;
     let StakingPoolContract;
+    let owner, user1, user2, user3;
 
     before(async function() {
         [owner, user1, user2, user3] = await ethers.getSigners();
+        console.log(owner, 'owner');
 
         // deploy dummy token
-        TokenContract = await (await ethers.getContractFactory('Token')).deploy();
-        expect(await TokenContract.owner()).to.eq(owner.address);
+        TestERC20 = await ethers.deployContract("TestERC20");
+        await TestERC20.waitForDeployment();
+        expect(await TestERC20.owner()).to.eq(owner.address);
+        console.log('TestERC20 deployed at address: ', TestERC20.target);
 
-        // mint dummy token initial balance
-        await TokenContract.connect(owner).mint(owner.address, ethers.utils.parseUnits('10000000', 18));
+        let balanceOfOwner = await TestERC20.balanceOf(owner.address);
+        let tx = await TestERC20.mint(owner.address, ethers.parseUnits('10000000', 18));
+        await tx.wait(1);
+        expect(await TestERC20.balanceOf(owner.address)).to.greaterThan(balanceOfOwner);
 
         // grant user1, user2 and user3 with dummy tokens
-        const DUMMY_TOKENS_AMOUNT = ethers.utils.parseUnits('1000', 18);
-        await TokenContract.connect(owner).transfer(user1.address, DUMMY_TOKENS_AMOUNT);
-        await TokenContract.connect(owner).transfer(user2.address, DUMMY_TOKENS_AMOUNT);
-        await TokenContract.connect(owner).transfer(user3.address, DUMMY_TOKENS_AMOUNT);
-        expect(await TokenContract.balanceOf(user1.address)).to.be.greaterThan(0);
-        expect(await TokenContract.balanceOf(user2.address)).to.be.greaterThan(0);
-        expect(await TokenContract.balanceOf(user3.address)).to.be.greaterThan(0);
+        await TestERC20.connect(owner).transfer(user1.address, ethers.parseUnits('1000', 18));
+        await TestERC20.connect(owner).transfer(user2.address, ethers.parseUnits('1000', 18));
+        await TestERC20.connect(owner).transfer(user3.address, ethers.parseUnits('1000', 18));
+        expect(await TestERC20.balanceOf(user1.address)).to.be.greaterThan(0);
+        expect(await TestERC20.balanceOf(user2.address)).to.be.greaterThan(0);
+        expect(await TestERC20.balanceOf(user3.address)).to.be.greaterThan(0);
 
         // deploy staking pool
-        StakingPoolContract = await hre.ethers.getContractFactory('StakingPool');
-        StakingPoolContract = await StakingPoolContract.deploy(TokenContract.address, 2, 2); 
+        StakingPoolContract = await ethers.deployContract("StakingPool", [
+            TestERC20.target, 
+            2, 
+            2
+        ]);
+        await StakingPoolContract.waitForDeployment();
+        console.log('StakingPool deployed at address: ', StakingPoolContract.target);
         expect(await StakingPoolContract.owner()).to.eq(owner.address);
     });
 
     it('Test stake with user1', async function () {
-        const initialBalance = await TokenContract.balanceOf(user1.address);
+        const initialBalance = await TestERC20.balanceOf(user1.address);
         const stakerAtStart = await StakingPoolContract.stakers(user1.address);
-        const amount = ethers.utils.parseUnits('500', 18);
-        await TokenContract.connect(user1).approve(StakingPoolContract.address, amount);
+        const amount = ethers.parseUnits('500', 18);
+        await TestERC20.connect(user1).approve(StakingPoolContract.target, amount);
         await StakingPoolContract.connect(user1).stake(amount);
 
         const stakerAtEnd = await StakingPoolContract.stakers(user1.address);
         expect(stakerAtEnd.stakedTokens).to.be.greaterThan(stakerAtStart.stakedTokens);
-        expect(initialBalance).to.be.greaterThan(await TokenContract.balanceOf(user1.address));
+        expect(initialBalance).to.be.greaterThan(await TestERC20.balanceOf(user1.address));
     });
 
     it('Test stake with user2', async function () {
-        const initialBalance = await TokenContract.balanceOf(user2.address);
+        const initialBalance = await TestERC20.balanceOf(user2.address);
         const stakerAtStart = await StakingPoolContract.stakers(user2.address);
         const user1PendingRewards = await StakingPoolContract.getPendingReward(user1.address);
         const user2PendingRewards = await StakingPoolContract.getPendingReward(user2.address);
-        const amount = ethers.utils.parseUnits('750', 18);
-        await TokenContract.connect(user2).approve(StakingPoolContract.address, amount);
+        const amount = ethers.parseUnits('750', 18);
+        await TestERC20.connect(user2).approve(StakingPoolContract.target, amount);
         await StakingPoolContract.connect(user2).stake(amount);
 
         const stakerAtEnd = await StakingPoolContract.stakers(user2.address);
         expect(stakerAtEnd.stakedTokens).to.be.greaterThan(stakerAtStart.stakedTokens);
-        expect(initialBalance).to.be.greaterThan(await TokenContract.balanceOf(user2.address));
+        expect(initialBalance).to.be.greaterThan(await TestERC20.balanceOf(user2.address));
 
         // expect user1 & user2 pending rewards to increase
         expect(await StakingPoolContract.getPendingReward(user1.address)).to.be.greaterThan(user1PendingRewards);
@@ -62,18 +71,18 @@ describe('Strategy test init.', async function () {
     });
 
     it('Test stake with user3', async function () {
-        const initialBalance = await TokenContract.balanceOf(user3.address);
+        const initialBalance = await TestERC20.balanceOf(user3.address);
         const stakerAtStart = await StakingPoolContract.stakers(user3.address);
         const user1PendingRewards = await StakingPoolContract.getPendingReward(user1.address);
         const user2PendingRewards = await StakingPoolContract.getPendingReward(user2.address);
         const user3PendingRewards = await StakingPoolContract.getPendingReward(user3.address);
-        const amount = ethers.utils.parseUnits('500', 18);
-        await TokenContract.connect(user3).approve(StakingPoolContract.address, amount);
+        const amount = ethers.parseUnits('500', 18);
+        await TestERC20.connect(user3).approve(StakingPoolContract.target, amount);
         await StakingPoolContract.connect(user3).stake(amount);
 
         const stakerAtEnd = await StakingPoolContract.stakers(user3.address);
         expect(stakerAtEnd.stakedTokens).to.be.greaterThan(stakerAtStart.stakedTokens);
-        expect(initialBalance).to.be.greaterThan(await TokenContract.balanceOf(user3.address));
+        expect(initialBalance).to.be.greaterThan(await TestERC20.balanceOf(user3.address));
 
         // expect user1, user2 & user3 pending rewards to increase
         expect(await StakingPoolContract.getPendingReward(user1.address)).to.be.greaterThan(user1PendingRewards);
@@ -82,7 +91,7 @@ describe('Strategy test init.', async function () {
     });
 
     it('Test claimReward with user1', async function () {
-        const initialBalance = await TokenContract.balanceOf(user1.address);
+        const initialBalance = await TestERC20.balanceOf(user1.address);
         const stakerAtStart = await StakingPoolContract.stakers(user1.address);
         const user2PendingRewards = await StakingPoolContract.getPendingReward(user2.address);
         const user3PendingRewards = await StakingPoolContract.getPendingReward(user3.address);
@@ -90,7 +99,7 @@ describe('Strategy test init.', async function () {
 
         const stakerAtEnd = await StakingPoolContract.stakers(user1.address);
         expect(stakerAtEnd.stakedTokens).to.eq(stakerAtStart.stakedTokens); // no change in the staked token amount
-        expect(await TokenContract.balanceOf(user1.address)).to.be.greaterThan(initialBalance);
+        expect(await TestERC20.balanceOf(user1.address)).to.be.greaterThan(initialBalance);
 
         // expect user1 pending rewards to be null
         expect(await StakingPoolContract.getPendingReward(user1.address)).to.eq(0);
@@ -101,18 +110,18 @@ describe('Strategy test init.', async function () {
     });
 
     it('Test unstake with user1', async function () {
-        const initialBalance = await TokenContract.balanceOf(user1.address);
+        const initialBalance = await TestERC20.balanceOf(user1.address);
         const stakerAtStart = await StakingPoolContract.stakers(user1.address);
         const user2PendingRewards = await StakingPoolContract.getPendingReward(user2.address);
         const user3PendingRewards = await StakingPoolContract.getPendingReward(user3.address);
-        const amount = ethers.utils.parseUnits('250', 18);
+        const amount = ethers.parseUnits('250', 18);
         let tx = await StakingPoolContract.connect(user1).unstake(amount);
 
         const stakerAtEnd = await StakingPoolContract.stakers(user1.address);
         expect(stakerAtStart.stakedTokens).to.be.greaterThan(stakerAtEnd.stakedTokens);
         expect(stakerAtEnd.stakedTokens).to.be.greaterThan(0);
-        expect(stakerAtEnd.stakedTokens).to.eq(ethers.BigNumber.from(stakerAtStart.stakedTokens).sub(amount));
-        expect(await TokenContract.balanceOf(user1.address)).to.be.greaterThan(initialBalance);
+        expect(stakerAtEnd.stakedTokens).to.eq(BigInt(stakerAtStart.stakedTokens) - amount);
+        expect(await TestERC20.balanceOf(user1.address)).to.be.greaterThan(initialBalance);
 
         // expect user2 & user3 pending rewards to increase
         expect(await StakingPoolContract.getPendingReward(user2.address)).to.be.greaterThan(user2PendingRewards);
@@ -120,19 +129,19 @@ describe('Strategy test init.', async function () {
     });
 
     it('Test injectIntoPool with owner', async function () {
-        const initialBalance = await TokenContract.balanceOf(owner.address);
+        const initialBalance = await TestERC20.balanceOf(owner.address);
         const user1PendingRewards = await StakingPoolContract.getPendingReward(user1.address);
         const user2PendingRewards = await StakingPoolContract.getPendingReward(user2.address);
         const user3PendingRewards = await StakingPoolContract.getPendingReward(user3.address);
-        const amount = ethers.utils.parseUnits('1000', 18);
-        await TokenContract.connect(owner).approve(StakingPoolContract.address, amount);
+        const amount = ethers.parseUnits('1000', 18);
+        await TestERC20.connect(owner).approve(StakingPoolContract.target, amount);
         await StakingPoolContract.connect(owner).injectIntoPool(amount);
 
         const stakerAtEnd = await StakingPoolContract.stakers(owner.address);
         expect(stakerAtEnd.round).to.eq(0);
         expect(stakerAtEnd.stakedTokens).to.eq(0);
-        expect(initialBalance).to.be.greaterThan(await TokenContract.balanceOf(owner.address));
-        expect(initialBalance).to.eq(ethers.BigNumber.from(await TokenContract.balanceOf(owner.address)).add(amount));
+        expect(initialBalance).to.be.greaterThan(await TestERC20.balanceOf(owner.address));
+        expect(initialBalance).to.eq(BigInt(await TestERC20.balanceOf(owner.address)) + amount);
 
         // expect user1, user2 & user3 pending rewards to increase
         expect(await StakingPoolContract.getPendingReward(user1.address)).to.be.greaterThan(user1PendingRewards);
@@ -141,18 +150,18 @@ describe('Strategy test init.', async function () {
     });
 
     it('Test stake with user3', async function () {
-        const initialBalance = await TokenContract.balanceOf(user3.address);
+        const initialBalance = await TestERC20.balanceOf(user3.address);
         const stakerAtStart = await StakingPoolContract.stakers(user3.address);
         const user1PendingRewards = await StakingPoolContract.getPendingReward(user1.address);
         const user2PendingRewards = await StakingPoolContract.getPendingReward(user2.address);
         const user3PendingRewards = await StakingPoolContract.getPendingReward(user3.address);
-        const amount = ethers.utils.parseUnits('500', 18);
-        await TokenContract.connect(user3).approve(StakingPoolContract.address, amount);
+        const amount = ethers.parseUnits('500', 18);
+        await TestERC20.connect(user3).approve(StakingPoolContract.target, amount);
         await StakingPoolContract.connect(user3).stake(amount);
 
         const stakerAtEnd = await StakingPoolContract.stakers(user3.address);
         expect(stakerAtEnd.stakedTokens).to.be.greaterThan(stakerAtStart.stakedTokens);
-        expect(initialBalance).to.be.greaterThan(await TokenContract.balanceOf(user3.address));
+        expect(initialBalance).to.be.greaterThan(await TestERC20.balanceOf(user3.address));
 
         // expect user1 & user2 pending rewards to increase
         expect(await StakingPoolContract.getPendingReward(user1.address)).to.be.greaterThan(user1PendingRewards);
@@ -163,9 +172,9 @@ describe('Strategy test init.', async function () {
     });
 
     it('Test unstake with all users', async function () {
-        const user1InitialBalance = await TokenContract.balanceOf(user1.address);
-        const user2InitialBalance = await TokenContract.balanceOf(user2.address);
-        const user3InitialBalance = await TokenContract.balanceOf(user3.address);
+        const user1InitialBalance = await TestERC20.balanceOf(user1.address);
+        const user2InitialBalance = await TestERC20.balanceOf(user2.address);
+        const user3InitialBalance = await TestERC20.balanceOf(user3.address);
         const user1StakerAtStart = await StakingPoolContract.stakers(user1.address);
         const user2StakerAtStart = await StakingPoolContract.stakers(user2.address);
         const user3StakerAtStart = await StakingPoolContract.stakers(user3.address);
@@ -184,9 +193,9 @@ describe('Strategy test init.', async function () {
         expect(user1StakerAtEnd.stakedTokens).to.eq(0);
         expect(user2StakerAtEnd.stakedTokens).to.eq(0);
         expect(user3StakerAtEnd.stakedTokens).to.eq(0);
-        expect(await TokenContract.balanceOf(user1.address)).to.be.greaterThan(user1InitialBalance);
-        expect(await TokenContract.balanceOf(user2.address)).to.be.greaterThan(user2InitialBalance);
-        expect(await TokenContract.balanceOf(user3.address)).to.be.greaterThan(user3InitialBalance);
+        expect(await TestERC20.balanceOf(user1.address)).to.be.greaterThan(user1InitialBalance);
+        expect(await TestERC20.balanceOf(user2.address)).to.be.greaterThan(user2InitialBalance);
+        expect(await TestERC20.balanceOf(user3.address)).to.be.greaterThan(user3InitialBalance);
 
         // expect user1, user2 & user3 pending rewards to be null
         expect(await StakingPoolContract.getPendingReward(user1.address)).to.eq(0);
@@ -205,23 +214,29 @@ describe('Strategy test init.', async function () {
 
     it('Test INVALID stake', async function () {
         await expect(
-            StakingPoolContract.connect(owner).stake(ethers.utils.parseUnits('500', 18))
-        ).to.be.revertedWith('ERC20: insufficient allowance');
+            StakingPoolContract.connect(owner).stake(ethers.parseUnits('500', 18))
+        ).to.be.revertedWithCustomError(
+            TestERC20,
+            'ERC20InsufficientAllowance'
+        );
     });
 
     it('Test INVALID stake ( approval given, but contract paused )', async function () {
         await StakingPoolContract.connect(owner).pause();
-        const amount = ethers.utils.parseUnits('500', 18);
-        await TokenContract.connect(owner).approve(StakingPoolContract.address, amount);
+        const amount = ethers.parseUnits('500', 18);
+        await TestERC20.connect(owner).approve(StakingPoolContract.target, amount);
         await expect(
             StakingPoolContract.connect(owner).stake(amount)
-        ).to.be.revertedWith('Pausable: paused');
+        ).to.be.revertedWithCustomError(
+            StakingPoolContract,
+            'EnforcedPause'
+        );
         await StakingPoolContract.connect(owner).unpause();
     });
 
     it('Test INVALID injectIntoPool', async function () {
         await expect(
-            StakingPoolContract.connect(owner).injectIntoPool(ethers.utils.parseUnits('500', 18))
+            StakingPoolContract.connect(owner).injectIntoPool(ethers.parseUnits('500', 18))
         ).to.be.revertedWithCustomError(
             StakingPoolContract,
             'InvalidInject'
@@ -230,17 +245,20 @@ describe('Strategy test init.', async function () {
 
     it('Test INVALID injectIntoPool ( approval given, but contract paused )', async function () {
         await StakingPoolContract.connect(owner).pause();
-        const amount = ethers.utils.parseUnits('500', 18);
-        await TokenContract.connect(owner).approve(StakingPoolContract.address, amount);
+        const amount = ethers.parseUnits('500', 18);
+        await TestERC20.connect(owner).approve(StakingPoolContract.target, amount);
         await expect(
             StakingPoolContract.connect(owner).injectIntoPool(amount)
-        ).to.be.revertedWith('Pausable: paused');
+        ).to.be.revertedWithCustomError(
+            StakingPoolContract,
+            'EnforcedPause'
+        );
         await StakingPoolContract.connect(owner).unpause();
     });
 
     it('Test INVALID unstake', async function () {
         await expect(
-            StakingPoolContract.connect(owner).unstake(ethers.utils.parseUnits('500', 18))
+            StakingPoolContract.connect(owner).unstake(ethers.parseUnits('500', 18))
         ).to.be.revertedWithCustomError(
             StakingPoolContract,
             'InvalidAmount'

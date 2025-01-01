@@ -2,7 +2,7 @@
 
 ### Project setup commands:
 * ```npm install``` - Downloading required packages.
-* ```npx hardhat test --network hardhat test/StakingPool.js``` - Testing the `StakingPool.sol` logic.
+* ```npx hardhat test --network hardhat scripts/deployStakingPool.js``` - Testing the core logic of `StakingPool.sol`.
 * ```npx hardhat run scripts/deploy.js --network <network-name>``` - Deploying the `StakingPool.sol` smart contract.
 
 ### Purpose:
@@ -25,6 +25,5 @@
 * Method `setFees` - with this method the owner have the permission to update the contract fees, but there is a condition which is protecting stakers that the fees can never be higher than 10 percentages.
 * Method `pause` - this is a standard method by OpenZeppelin to active the `Pausable.sol` logic. _( Currently only methods `stake` and `injectIntoPool` have the modifier **whenNotPaused** which means that in the future this smart contract be retired without without restricting stakers from withdrawing their tokens. )_
 * Method `unpause` - this is a standard method by OpenZeppelin to deactive the `Pausable.sol` logic.
-
 
 **WARNING!** - This contract is currently supporting only ERC20 tokens. The current version of the smart contract has not being audited by 3rd party and using it will be at your own risk.

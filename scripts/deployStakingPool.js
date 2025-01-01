@@ -4,23 +4,29 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
+const { expect } = require("chai");
 
 async function main() {
-    [owner] = await hre.ethers.getSigners();
+    [owner] = await ethers.getSigners();
 
-    const TOKEN_ADDRESS = '';
+    const TOKEN_ADDRESS = '0x03F7F064E6ceD8e154e3FdAAF92DcCC4e818E97B';
     const STAKING_FEE = 2; // sample fee
     const UNSTAKING_FEE = 2; // sample fee
-    let StakingPoolContract = await hre.ethers.getContractFactory('StakingPool');
-    StakingPoolContract = await StakingPoolContract.deploy(
+
+    if (!ethers.isAddress(TOKEN_ADDRESS)) {
+        return console.error('Invalid TOKEN_ADDRESS value.');
+    }
+
+    StakingPoolContract = await ethers.deployContract("StakingPool", [
         TOKEN_ADDRESS,
         STAKING_FEE,
         UNSTAKING_FEE
-    ); 
-    expect(await StakingPoolContract.owner()).to.eq(owner.address);
+    ]);
+    await StakingPoolContract.waitForDeployment();
 
-    console.log('StakingPoolContract deployed at address: ', StakingPoolContract);
+    expect(await StakingPoolContract.owner()).to.eq(owner.address);
+    console.log('StakingPoolContract deployed at address: ', StakingPoolContract.target);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

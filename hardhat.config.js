@@ -1,12 +1,13 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 module.exports = {
-    solidity: "0.8.19",
+    solidity: "0.8.28",
     defaultNetwork: 'hardhat',
     solidity: {
         compilers: [
             {
-                version: '0.8.19',
+                version: '0.8.28',
                 settings: {
                     viaIR: true,
                     optimizer: {
@@ -19,7 +20,12 @@ module.exports = {
     },
     networks: {
         hardhat: {
-            allowUnlimitedContractSize: true
+            forking: {
+                live: false,
+                saveDeployments: false,
+                accounts: [],
+                url: process.env.RPC_NODE
+            }
         }
     },
     mocha: {
