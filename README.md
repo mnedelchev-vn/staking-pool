@@ -17,13 +17,13 @@
 * Method `stake` - this method accepts one parameter `_amount` which is the amount of tokens that the `msg.sender` is willing to stake.
 * Method `unstake` - this method accepts one parameter `_amount` which is the amount of tokens that the `msg.sender` is willing to unstake.
 * Method `claimReward` - this method transfers all the current existing staking rewards to the `msg.sender` address.
-* Method `injectIntoPool` - This method accepts on parameter `_amount` and is designed if someone wants to make a donation to current the stakeholders. The `_amount` amount goes directly to the smart contract and is scattered among the stakers based on their stake.
+* Method `donateToPool` - This method accepts on parameter `_amount` and is designed if someone wants to make a donation to current the stakeholders. The `_amount` amount goes directly to the smart contract and is scattered among the stakers based on their stake.
 * Method `getPendingReward` - getter method which accepts one parameter `_staker` and is returning all the current existing staking rewards for `_staker` address.
 * The current round & staked amount for each user can be taken by the `mapping(address => Staker) public stakers` where the mapping key is the staker address.
 
 ### Smart contract Owner methods:
 * Method `setFees` - with this method the owner have the permission to update the contract fees, but there is a condition which is protecting stakers that the fees can never be higher than 10 percentages.
-* Method `pause` - this is a standard method by OpenZeppelin to active the `Pausable.sol` logic. _( Currently only methods `stake` and `injectIntoPool` have the modifier **whenNotPaused** which means that in the future this smart contract be retired without without restricting stakers from withdrawing their tokens. )_
+* Method `pause` - this is a standard method by OpenZeppelin to active the `Pausable.sol` logic. _( Currently only methods `stake` and `donateToPool` have the modifier **whenNotPaused** which means that in the future this smart contract be retired without without restricting stakers from withdrawing their tokens. )_
 * Method `unpause` - this is a standard method by OpenZeppelin to deactive the `Pausable.sol` logic.
 
 **WARNING!** - This contract is currently supporting only ERC20 tokens. The current version of the smart contract has not being audited by 3rd party and using it will be at your own risk.

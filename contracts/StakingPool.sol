@@ -142,7 +142,7 @@ contract StakingPool is Ownable, Pausable {
 
     /// @notice Injecting amount of tokens into smart contract which are getting scattered among the stakers based on their stake
     /// @param _amount The injecting token amount
-    function injectIntoPool(uint256 _amount) external whenNotPaused {
+    function donateToPool(uint256 _amount) external whenNotPaused {
         if (totalStakes > 0) {
             if (!token.transferFrom(msg.sender, address(this), _amount)) revert InvalidInject();
             _addPayout(_amount);

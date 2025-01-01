@@ -128,14 +128,14 @@ describe('Strategy test init.', async function () {
         expect(await StakingPoolContract.getPendingReward(user3.address)).to.be.greaterThan(user3PendingRewards);
     });
 
-    it('Test injectIntoPool with owner', async function () {
+    it('Test donateToPool with owner', async function () {
         const initialBalance = await TestERC20.balanceOf(owner.address);
         const user1PendingRewards = await StakingPoolContract.getPendingReward(user1.address);
         const user2PendingRewards = await StakingPoolContract.getPendingReward(user2.address);
         const user3PendingRewards = await StakingPoolContract.getPendingReward(user3.address);
         const amount = ethers.parseUnits('1000', 18);
         await TestERC20.connect(owner).approve(StakingPoolContract.target, amount);
-        await StakingPoolContract.connect(owner).injectIntoPool(amount);
+        await StakingPoolContract.connect(owner).donateToPool(amount);
 
         const stakerAtEnd = await StakingPoolContract.stakers(owner.address);
         expect(stakerAtEnd.round).to.eq(0);
@@ -234,21 +234,21 @@ describe('Strategy test init.', async function () {
         await StakingPoolContract.connect(owner).unpause();
     });
 
-    it('Test INVALID injectIntoPool', async function () {
+    it('Test INVALID donateToPool', async function () {
         await expect(
-            StakingPoolContract.connect(owner).injectIntoPool(ethers.parseUnits('500', 18))
+            StakingPoolContract.connect(owner).donateToPool(ethers.parseUnits('500', 18))
         ).to.be.revertedWithCustomError(
             StakingPoolContract,
             'InvalidInject'
         );
     });
 
-    it('Test INVALID injectIntoPool ( approval given, but contract paused )', async function () {
+    it('Test INVALID donateToPool ( approval given, but contract paused )', async function () {
         await StakingPoolContract.connect(owner).pause();
         const amount = ethers.parseUnits('500', 18);
         await TestERC20.connect(owner).approve(StakingPoolContract.target, amount);
         await expect(
-            StakingPoolContract.connect(owner).injectIntoPool(amount)
+            StakingPoolContract.connect(owner).donateToPool(amount)
         ).to.be.revertedWithCustomError(
             StakingPoolContract,
             'EnforcedPause'
