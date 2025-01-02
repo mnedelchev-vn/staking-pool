@@ -3,10 +3,10 @@
 ### Project setup commands:
 * ```npm install``` - Downloading required packages.
 * ```npx hardhat init-foundry``` - Installing Foundry in order to perform fuzz testing.
-* ```npx hardhat run scripts/deploy.js --network <network-name>``` - Deploying the `StakingPool.sol` smart contract.
+* ```npx hardhat run scripts/deploy.js --network <NETWORK_NAME>``` - Deploying the `StakingPool.sol` smart contract.
 
 ### Testing:
-* Unit testing through Hardhat - ```npx hardhat test --network hardhat scripts/deployStakingPool.js```
+* Unit testing through Hardhat - ```npx hardhat test test/TestStakingPool.js --network <NETWORK_NAME>```
 * Fuzz testing through Foundry - ```forge test --match-path test/TestStakingPool.sol -vv```
 
 
