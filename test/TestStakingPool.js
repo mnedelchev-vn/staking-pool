@@ -1,14 +1,13 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 
-describe('Strategy test init.', async function () {
+describe('TestStakingPool', async function () {
     let TestERC20;
     let StakingPoolContract;
     let owner, user1, user2, user3;
 
     before(async function() {
         [owner, user1, user2, user3] = await ethers.getSigners();
-        console.log(owner, 'owner');
 
         // deploy dummy token
         TestERC20 = await ethers.deployContract("TestERC20");

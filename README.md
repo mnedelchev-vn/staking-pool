@@ -2,11 +2,16 @@
 
 ### Project setup commands:
 * ```npm install``` - Downloading required packages.
-* ```npx hardhat test --network hardhat scripts/deployStakingPool.js``` - Testing the core logic of `StakingPool.sol`.
+* ```npx hardhat init-foundry``` - Installing Foundry in order to perform fuzz testing.
 * ```npx hardhat run scripts/deploy.js --network <network-name>``` - Deploying the `StakingPool.sol` smart contract.
 
+### Testing:
+* Unit testing through Hardhat - ```npx hardhat test --network hardhat scripts/deployStakingPool.js```
+* Fuzz testing through Foundry - ```forge test --match-path test/TestStakingPool.sol -vv```
+
+
 ### Purpose:
-[The Staking Pool](https://github.com/mnedelchev-vn/staking-pool/blob/master/contracts/StakingPool.sol) is a smart contract where multiple holders of particular ERC20 token can earn passive income based on the amount of tokens that they have been staking. The smart contract has no time restrictions which means that the token holders are allowed to stake, unstake or claim their current rewards at any time. This approach doesn't have hardcoded or flexiable APY, in matter of fact it doesn't have APY at all. The way that rewards are being generated are based on fees which are being collected from every stake or unstake action. Everytime someone join or leave the staking pool he is being charged with small fees which are scattered among the stakers based on their stake. The longer you keep your staking position inside the pool the higher rewards you will generate thanks to the stakers who joined after you.
+[The Staking Pool](https://github.com/mnedelchev-vn/staking-pool/blob/master/contracts/StakingPool.sol) is a smart contract where multiple holders of a ERC20 token can earn passive income based on the amount of tokens that they have been staking. The smart contract has no time restrictions which means that the token holders are allowed to stake, unstake or claim their current rewards at any time. This approach doesn't have hardcoded or flexiable APY, in matter of fact it doesn't have APY at all. The way that rewards are being generated are based on fees which are being collected from every stake or unstake action. Everytime someone join or leave the staking pool he is being charged with small fees which are scattered among the stakers based on their stake. The longer you keep your staking position inside the pool the higher rewards you will generate thanks to the stakers who joined after you. The pool is a custom code and it doesn't follow the ERC4626 approach where shares are actually tokens that being minted or burned to users. The pool's shares are dynamic values which are calculated in real time.
 
 ### Smart contract constructor parameters:
 * `_token` - This is the token contract to which the Staking Program will apply. Holders of this token will have the opportunity to take part in the staking.

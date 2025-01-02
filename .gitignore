@@ -9,3 +9,7 @@ typechain-types
 cache
 artifacts
 
+# Foundry
+lib/
+out/
+cache_forge/

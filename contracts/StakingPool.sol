@@ -165,7 +165,7 @@ contract StakingPool is Ownable, Pausable {
         emit Payout(round, _fee, msg.sender);
     }
 
-    /// @notice Getted method which isreturning all the current pending rewards for a staker
+    /// @notice Getted method which is returning all the current pending rewards for a staker
     /// @param _staker The staker address
     function getPendingReward(address _staker) public view returns(uint256) {
         uint stakerRound = stakers[_staker].round;
