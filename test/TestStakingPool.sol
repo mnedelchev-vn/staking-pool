@@ -262,7 +262,7 @@ contract TestStakingPool is Test {
     }
 
     function invariant_totalStakes() public view {
-        assert(token.balanceOf(address(sp)) == sp.totalStakes());
+        assert(token.balanceOf(address(sp)) >= sp.totalStakes());
     }
 
     function invariant_lastPayoutAlwaysPositive() public view {
@@ -280,7 +280,26 @@ contract TestStakingPool is Test {
         }
     }
 
-    /// invariant donate to pool always possible
+    function invariant_alwaysClaimableRewardUnlessPaused() public {
+        if (!sp.paused()) {
+            vm.startPrank(user1);
 
-    /// invariant claimReward always possible if pending rewards > 0
+            _stake(1 ether, user1);
+            uint donationAmount = 1000 * 10 ** 18;
+            token.approve(address(sp), donationAmount);
+
+            assertEq(sp.getPendingReward(user1), 0);
+            sp.donateToPool(donationAmount);
+
+            assertGt(sp.getPendingReward(user1), 0);
+
+            uint tokenBalanceBeforeClaim = token.balanceOf(user1);
+            sp.claimReward();
+
+            assertEq(sp.getPendingReward(user1), 0);
+            assertGt(token.balanceOf(user1), tokenBalanceBeforeClaim);
+
+            vm.stopPrank();
+        }
+    }
 }
