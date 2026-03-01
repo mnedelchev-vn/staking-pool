@@ -279,4 +279,8 @@ contract TestStakingPool is Test {
             vm.stopPrank();
         }
     }
+
+    /// invariant donate to pool always possible
+
+    /// invariant claimReward always possible if pending rewards > 0
 }
