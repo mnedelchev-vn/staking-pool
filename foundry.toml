@@ -7,3 +7,7 @@ cache_path  = 'cache_forge'
 
 [fuzz]
 runs = 1024
+
+[invariant]
+runs = 1000
+depth = 1000

@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 
 contract StakingPool is Ownable, Pausable {
-    uint64 constant private SCALING = 10 ** 18;
-    IERC20 public token;
-    uint8 public stakingFee; // percentage
-    uint8 public unstakingFee; // percentage
+    using SafeERC20 for IERC20;
+
+    uint64 constant public SCALING = 10 ** 18;
+    uint256 constant public FEE_DENOMINATOR = 10000;
+    IERC20 public immutable token;
+    uint16 public stakingFee; // percentage e.g. 200 for 2%
+    uint16 public unstakingFee; // percentage e.g. 200 for 2%
     uint256 public round = 1;
     uint256 public totalStakes;
     uint256 public totalDividends;
@@ -26,21 +30,21 @@ contract StakingPool is Ownable, Pausable {
 
     error InvalidFees();
     error InvalidAmount();
-    error InvalidTransfer();
-    error InvalidTransferFrom();
     error InvalidInject();
     error InvalidRewardClaim();
+    error InvalidRecover();
 
-    constructor(address _token, uint8 _stakingFee, uint8 _unstakingFee) Ownable(msg.sender) {
+    constructor(address _token, uint16 _stakingFee, uint16 _unstakingFee) Ownable(msg.sender) {
         token = IERC20(_token);
-        stakingFee = _stakingFee;
-        unstakingFee = _unstakingFee;
+
+        setFees(_stakingFee, _unstakingFee);
     }
 
     event Staked(address staker, uint256 tokens, uint256 fee);
     event Unstaked(address staker, uint256 tokens, uint256 fee);
     event Payout(uint256 round, uint256 tokens, address sender);
     event ClaimReward(address staker, uint256 reward);
+    event Recovered(address token, uint256 amount);
 
     /*
      * CONTRACT OWNER
@@ -53,11 +57,23 @@ contract StakingPool is Ownable, Pausable {
         _unpause();
     }
 
-    function setFees(uint8 _stakingFee, uint8 _unstakingFee) external onlyOwner {
-        if (_stakingFee > 10 || _unstakingFee > 10) revert InvalidFees();
+    function setFees(uint16 _stakingFee, uint16 _unstakingFee) public onlyOwner {
+        if (_stakingFee > FEE_DENOMINATOR / 10 || _unstakingFee > FEE_DENOMINATOR / 10) revert InvalidFees();
 
         stakingFee = _stakingFee;
         unstakingFee = _unstakingFee;
+    }
+
+    function recover(address _token, uint256 _amount) public onlyOwner {
+        if (_token == address(0)) {
+            (bool success, ) = owner().call{value: _amount}("");
+            require(success, InvalidRecover());
+        } else {
+            IERC20(_token).safeTransfer(owner(), _amount);
+            require(IERC20(token).balanceOf(address(this)) >= totalStakes, InvalidRecover());
+        }
+
+        emit Recovered(_token, _amount);
     }
     /*
      * /CONTRACT OWNER
@@ -66,12 +82,12 @@ contract StakingPool is Ownable, Pausable {
     /// @notice Staking into the smart contract
     /// @param _amount The staking token amount
     function stake(uint256 _amount) external whenNotPaused {
-        if (_amount <= 0) revert InvalidAmount();
-        if (!token.transferFrom(msg.sender, address(this), _amount)) revert InvalidTransferFrom();
+        require(_amount > 0, InvalidAmount());
+        token.safeTransferFrom(msg.sender, address(this), _amount);
 
         uint256 _fee;
         if (totalStakes > 0) {
-            _fee = (_amount * stakingFee) / 100;
+            _fee = (_amount * stakingFee) / FEE_DENOMINATOR;
         }
 
         uint256 pendingReward = getPendingReward(msg.sender);
@@ -89,7 +105,7 @@ contract StakingPool is Ownable, Pausable {
 
         // if existing rewards then send them to the staker
         if (pendingReward > 0) {
-            if (!token.transfer(msg.sender, pendingReward)) revert InvalidRewardClaim();
+            token.safeTransfer(msg.sender, pendingReward);
             emit ClaimReward(msg.sender, pendingReward);
         }
 
@@ -101,7 +117,7 @@ contract StakingPool is Ownable, Pausable {
         uint256 pendingReward = getPendingReward(msg.sender);
         if (pendingReward > 0) {
             stakers[msg.sender].round = round; // update the round
-            if (!token.transfer(msg.sender, pendingReward)) revert InvalidRewardClaim();
+            token.safeTransfer(msg.sender, pendingReward);
             emit ClaimReward(msg.sender, pendingReward);
         } else {
             revert InvalidRewardClaim();
@@ -123,7 +139,7 @@ contract StakingPool is Ownable, Pausable {
         // if totalStakes then spread the fee in the staking pool
         uint256 _fee;
         if (totalStakes > 0) {
-            _fee = (_amount * unstakingFee) / 100;
+            _fee = (_amount * unstakingFee) / FEE_DENOMINATOR;
             _addPayout(_fee);
         }
 
@@ -135,7 +151,7 @@ contract StakingPool is Ownable, Pausable {
         }
 
         // sending to user desired token amount minus his unstacking fee
-        if (!token.transfer(msg.sender, unstakingAmount)) revert InvalidTransfer();
+        token.safeTransfer(msg.sender, unstakingAmount);
 
         emit Unstaked(msg.sender, _amount - _fee, _fee);
     }
@@ -144,7 +160,7 @@ contract StakingPool is Ownable, Pausable {
     /// @param _amount The injecting token amount
     function donateToPool(uint256 _amount) external whenNotPaused {
         if (totalStakes > 0) {
-            if (!token.transferFrom(msg.sender, address(this), _amount)) revert InvalidInject();
+            token.safeTransferFrom(msg.sender, address(this), _amount);
             _addPayout(_amount);
         } else {
             revert InvalidInject();
