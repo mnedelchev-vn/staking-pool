@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "avoid-call-value": "error",
+    "avoid-low-level-calls": "error",
+    "avoid-sha3": "error",
+    "avoid-throw": "error",
+    "avoid-tx-origin": "error",
+    "check-send-result": "error",
+    "func-visibility": ["error", { "ignoreConstructors": true }],
+    "multiple-sends": "error",
+    "no-complex-fallback": "error",
+    "no-immutable-before-declaration": "error",
+    "no-inline-assembly": "error",
+    "no-unchecked-calls": "error",
+    "not-rely-on-block-hash": "error",
+    "not-rely-on-time": "error",
+    "reentrancy": "error",
+    "state-visibility": "error"
+  }
+}
