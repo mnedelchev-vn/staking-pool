@@ -1,0 +1,15 @@
+SetFees_Integration_Concrete_Test
+├── when caller not owner
+│  └── it should revert
+└── when caller owner
+   ├── when staking fee exceeds max
+   │  └── it should revert
+   ├── when unstaking fee exceeds max
+   │  └── it should revert
+   └── when both fees within max
+      ├── when fees zero
+      │  └── it should set both fees to zero
+      ├── when fees at max
+      │  └── it should set both fees to the max
+      └── when fees differ
+         └── it should set each fee independently

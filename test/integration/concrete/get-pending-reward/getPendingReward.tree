@@ -1,0 +1,12 @@
+GetPendingReward_Integration_Concrete_Test
+├── given account never staked
+│  └── it should return zero
+├── given account is the only staker
+│  └── it should return zero
+├── given account fully unstaked
+│  └── it should return zero
+└── given account holds a stake alongside others
+   ├── given no payout since the last interaction
+   │  └── it should return zero
+   └── given payouts since the last interaction
+      └── it should return the pro rata share of the dividends

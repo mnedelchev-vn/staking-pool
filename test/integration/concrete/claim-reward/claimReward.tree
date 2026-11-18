@@ -1,0 +1,16 @@
+ClaimReward_Integration_Concrete_Test
+├── given no pending reward
+│  ├── when caller never staked
+│  │  └── it should revert
+│  └── when caller is the only staker
+│     └── it should revert
+└── given pending reward
+   ├── given paused
+   │  └── it should still pay the reward
+   └── given not paused
+      └── it should pay the reward
+         ├── it should transfer the reward to the staker
+         ├── it should leave the staked amount unchanged
+         ├── it should move the staker to the current round
+         ├── it should leave the other stakers' rewards unchanged
+         └── it should emit {ClaimReward} event

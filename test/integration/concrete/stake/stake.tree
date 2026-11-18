@@ -1,0 +1,36 @@
+Stake_Integration_Concrete_Test
+├── given paused
+│  └── it should revert
+└── given not paused
+   ├── when amount zero
+   │  └── it should revert
+   └── when amount not zero
+      ├── given insufficient allowance
+      │  └── it should revert
+      ├── given insufficient balance
+      │  └── it should revert
+      └── given sufficient allowance and balance
+         ├── given no stakes in the pool
+         │  ├── given fresh pool
+         │  │  └── it should credit the full amount without a fee
+         │  │     ├── it should set the staker balance to the amount
+         │  │     ├── it should not open a payout round
+         │  │     ├── it should pull the tokens into the pool
+         │  │     └── it should emit {Staked} event
+         │  └── given pool emptied by earlier stakers
+         │     └── it should credit the full amount without a fee or past dividends
+         └── given stakes in the pool
+            ├── given fee rounds down to zero
+            │  └── it should credit the full amount without opening a payout round
+            └── given fee not zero
+               ├── given staker has no pending reward
+               │  └── it should charge the fee and spread it over all stakes
+               │     ├── it should credit the amount minus the fee
+               │     ├── it should open a payout round with the fee
+               │     ├── it should share the fee with the new staker too
+               │     └── it should emit {Payout} and {Staked} events
+               └── given staker has pending reward
+                  └── it should pay the pending reward and charge the fee
+                     ├── it should transfer the pending reward to the staker
+                     ├── it should credit the amount minus the fee on top of the old stake
+                     └── it should emit {Payout}, {ClaimReward} and {Staked} events

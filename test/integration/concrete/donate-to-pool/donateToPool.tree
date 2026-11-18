@@ -1,0 +1,17 @@
+DonateToPool_Integration_Concrete_Test
+├── given paused
+│  └── it should revert
+└── given not paused
+   ├── given no stakes in the pool
+   │  └── it should revert
+   └── given two stakers in the pool
+      ├── given insufficient allowance
+      │  └── it should revert
+      ├── when amount zero
+      │  └── it should not move tokens or change the dividends
+      └── when amount not zero
+         └── it should spread the donation over all stakes
+            ├── it should pull the tokens into the pool
+            ├── it should not credit a stake to the donor
+            ├── it should raise every staker's reward pro rata
+            └── it should emit {Payout} event

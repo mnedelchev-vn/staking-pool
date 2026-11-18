@@ -1,0 +1,10 @@
+Unpause_Integration_Concrete_Test
+├── when caller not owner
+│  └── it should revert
+└── when caller owner
+   ├── given not paused
+   │  └── it should revert
+   └── given paused
+      ├── it should unpause the pool
+      ├── it should emit {Unpaused} event
+      └── it should reopen staking

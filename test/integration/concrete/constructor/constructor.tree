@@ -1,0 +1,10 @@
+Constructor_Integration_Concrete_Test
+├── when staking fee exceeds max
+│  └── it should revert
+├── when unstaking fee exceeds max
+│  └── it should revert
+└── when fees within max
+   ├── it should set the staking token
+   ├── it should set the deployer as the owner
+   ├── it should set both fees
+   └── it should start unpaused at round one with empty accounting

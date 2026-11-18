@@ -1,0 +1,32 @@
+Unstake_Integration_Concrete_Test
+├── when amount zero
+│  └── it should revert
+└── when amount not zero
+   ├── when caller never staked
+   │  └── it should revert
+   ├── when amount exceeds staked balance
+   │  └── it should revert
+   └── when amount within staked balance
+      ├── given caller is the last staker
+      │  └── it should return the full amount without a fee
+      │     ├── it should clear the staker balance
+      │     ├── it should not open a payout round
+      │     └── it should emit {Unstaked} event
+      └── given other stakers remain
+         ├── given paused
+         │  └── it should still pay out the stake
+         ├── given unstaking fee zero
+         │  └── it should return the full amount plus the pending reward
+         ├── given fee rounds down to zero
+         │  └── it should return the full amount plus the pending reward
+         └── given fee not zero
+            ├── given staker has no pending reward
+            │  └── it should charge the fee and spread it over the remaining stakes
+            │     ├── it should transfer the amount minus the fee
+            │     ├── it should reduce the stake and the total stakes by the full amount
+            │     ├── it should open a payout round with the fee
+            │     └── it should emit {Payout} and {Unstaked} events
+            └── given staker has pending reward
+               └── it should add the pending reward to the transfer
+                  ├── it should transfer the amount minus the fee plus the reward
+                  └── it should emit {Payout}, {ClaimReward} and {Unstaked} events

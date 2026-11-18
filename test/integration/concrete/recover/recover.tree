@@ -1,0 +1,26 @@
+Recover_Integration_Concrete_Test
+├── when caller not owner
+│  └── it should revert
+└── when caller owner
+   ├── when token is native
+   │  ├── given pool ETH balance insufficient
+   │  │  └── it should revert
+   │  └── given pool ETH balance sufficient
+   │     ├── it should send the ETH to the owner
+   │     ├── it should reduce the pool ETH balance
+   │     └── it should emit {Recovered} event
+   └── when token is an ERC20
+      ├── when token is not a contract
+      │  └── it should revert
+      ├── when token is the staking token
+      │  ├── given recovery leaves pool below total stakes
+      │  │  └── it should revert
+      │  ├── given recovery leaves pool at total stakes
+      │  │  ├── it should send the surplus to the owner
+      │  │  └── it should emit {Recovered} event
+      │  └── given pool surplus includes unclaimed rewards
+      │     └── it should let the owner recover the rewards
+      └── when token is another ERC20
+         ├── it should send the tokens to the owner
+         ├── it should leave the staking accounting untouched
+         └── it should emit {Recovered} event
